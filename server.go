@@ -89,7 +89,7 @@ func NewServer(store *Store, auth *AuthStore, fn *Runner, mailer Mailer, cfg Con
 		orgOnly: cfg.OrgOnly && len(cfg.OrgDomains) > 0,
 	}
 	for _, d := range cfg.OrgDomains {
-		if d = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(d, "@"))); d != "" {
+		if d = strings.ToLower(strings.Trim(strings.TrimSpace(d), "@.")); d != "" {
 			s.orgDomains = append(s.orgDomains, d)
 		}
 	}
