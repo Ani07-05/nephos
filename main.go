@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,7 +21,7 @@ import (
 
 const usage = `nephos - a cloud for small software
 
-  nephos serve  [-addr :8080] [-data ./data] [-url http://localhost:8080] [-domain localhost]
+  nephos serve  [-lan] [-addr :8080] [-data ./data] [-url http://localhost:8080] [-domain localhost]
   nephos deploy <dir> [name]
   nephos share  <name> <email>
   nephos access <name> invited|org|public
@@ -74,8 +75,27 @@ func serve(args []string) error {
 	smtpAddr := fs.String("smtp", os.Getenv("NEPHOS_SMTP"), "SMTP server host:port (587 STARTTLS or 465 TLS); empty prints emails to the log")
 	mailFrom := fs.String("mail-from", os.Getenv("NEPHOS_MAIL_FROM"), `sender address, e.g. "nephos <hello@example.com>"`)
 	orgDomains := fs.String("org-domain", os.Getenv("NEPHOS_ORG_DOMAINS"), "email domain(s) that count as your organization, comma separated, e.g. acme.com")
+	lan := fs.Bool("lan", false, "share on your local network or tailnet: apps get <name>.<ip>.sslip.io addresses, no domain or server needed")
+	lanIP := fs.String("ip", "", "with -lan: address to share on instead of the detected one, e.g. your Tailscale IP")
 	orgOnly := fs.Bool("org-only", false, "only allow invitations to -org-domain addresses")
 	fs.Parse(args)
+
+	if *lan {
+		ip := *lanIP
+		if ip == "" {
+			var err error
+			if ip, err = outboundIP(); err != nil {
+				return fmt.Errorf("can't detect this machine's address, pass -ip: %w", err)
+			}
+		}
+		_, port, err := net.SplitHostPort(*addr)
+		if err != nil {
+			return err
+		}
+		*domain = strings.ReplaceAll(ip, ".", "-") + ".sslip.io"
+		*pub = "http://" + *domain + ":" + port
+		log.Printf("sharing on %s: apps are at http://<name>.%s:%s", ip, *domain, port)
+	}
 
 	store, err := NewStore(*data)
 	if err != nil {
@@ -255,6 +275,16 @@ func zipDir(dir string) (*bytes.Reader, error) {
 		return nil, err
 	}
 	return bytes.NewReader(buf.Bytes()), nil
+}
+
+// outboundIP is the address this machine uses to reach the internet. Dialing UDP sends nothing.
+func outboundIP() (string, error) {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	return conn.LocalAddr().(*net.UDPAddr).IP.String(), nil
 }
 
 func splitList(s string) []string {
