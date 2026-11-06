@@ -570,6 +570,8 @@ func (s *Server) page(w http.ResponseWriter, status int, app string, d pageData)
 }
 
 // sameOrigin rejects cross-site form posts so other sites can't trigger sign-in emails.
+// Pages that post forms must not send Referrer-Policy: no-referrer, because browsers then
+// send "Origin: null" on a form's own same-origin POST, which looks like an attack.
 func sameOrigin(r *http.Request) bool {
 	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" && site != "none" {
 		return false
