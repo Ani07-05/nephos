@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nephos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Young+Serif&display=swap">
+<style>
+  {{.Tokens}}
+
+  .shell { display: grid; grid-template-columns: 17.5rem minmax(0, 1fr); min-height: 100vh; }
+
+  .rail { background: var(--sky); padding: 1.75rem 1rem 2rem; position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; }
+  .mark { font: 1.5rem/1 var(--serif); color: var(--ink); text-decoration: none; padding: 0 .5rem; display: inline-block; margin-bottom: 1.75rem; }
+  .rail ul { list-style: none; margin: 0; padding: 0; }
+  .rail li a { display: grid; grid-template-columns: 2.5rem 1fr; column-gap: .75rem; align-items: center; padding: .55rem .5rem; border-radius: 10px; color: var(--ink); text-decoration: none; }
+  .rail li a:hover { background: color-mix(in srgb, var(--cloud) 55%, transparent); }
+  .rail li a[aria-current="page"] { background: var(--cloud); }
+  .rail .cloud { grid-row: span 2; color: var(--cloud); display: block; width: 2.5rem; }
+  .rail a[aria-current="page"] .cloud, .rail a:hover .cloud { color: var(--sun); }
+  .rail .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rail .sub { font-size: .8125rem; color: var(--muted); }
+  .rail .hint { margin: 1.75rem .5rem 0; font-size: .8125rem; color: var(--muted); }
+  .rail .hint code { display: block; margin-top: .35rem; color: var(--ink); }
+
+  main { padding: clamp(1.75rem, 5vw, 4rem) clamp(1rem, 5vw, 4rem); }
+  .pane { max-width: 38rem; }
+
+  .hero { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem; }
+  .hero .cloud { width: 7rem; flex: none; color: var(--sun); animation: drift 11s ease-in-out infinite alternate; }
+  @keyframes drift { from { transform: translateX(-.4rem); } to { transform: translateX(.6rem); } }
+  @media (prefers-reduced-motion: reduce) { .hero .cloud { animation: none; } }
+  h1 { font: clamp(2rem, 5vw, 2.75rem)/1.1 var(--serif); margin: 0; overflow-wrap: anywhere; }
+
+  .where { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin: 0 0 .5rem; }
+  .where a.mono { word-break: break-all; }
+  .facts { color: var(--muted); margin: 0 0 1.5rem; }
+
+  h2 { font: 1.25rem/1.3 var(--serif); margin: 2.5rem 0 .25rem; }
+  .lede { color: var(--muted); margin: 0 0 1rem; }
+
+  .mode { display: inline-flex; background: var(--sky); border-radius: 10px; padding: 3px; margin-bottom: 1.25rem; }
+  .mode button { border: 0; background: none; color: var(--muted); padding: .4rem .9rem; border-radius: 8px; font-weight: 500; }
+  .mode button[aria-pressed="true"] { background: var(--cloud); color: var(--ink); font-weight: 600; }
+
+  .people { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .people li { display: grid; grid-template-columns: 2rem 1fr auto; gap: .25rem .75rem; align-items: center; padding: .7rem 0; border-bottom: 1px solid var(--rule); }
+  .who { width: 2rem; height: 2rem; border-radius: 50%; background: var(--sky); display: grid; place-items: center; font-weight: 600; color: var(--muted); }
+  .people .email { overflow-wrap: anywhere; display: grid; }
+  .people .email small { color: var(--muted); font-size: .8125rem; }
+  form.inline { display: inline; margin-left: .35rem; }
+  .notice { background: var(--sky); border-radius: 10px; padding: .7rem 1rem; margin: 1.5rem 0 0; }
+  .people .acts { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .people form { display: inline; margin: 0; }
+  .none { color: var(--muted); padding: .9rem 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin: 0; }
+
+  .invite { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
+  .invite input { flex: 1 1 14rem; font: inherit; color: var(--ink); background: var(--sky); border: 1px solid transparent; border-radius: 8px; padding: .5rem .75rem; }
+  .invite input::placeholder { color: var(--muted); }
+
+  details { margin-top: 3rem; color: var(--muted); }
+  summary { cursor: pointer; width: fit-content; }
+  details form { margin-top: .75rem; }
+
+  .empty { max-width: 32rem; padding-top: 4rem; }
+  .empty .cloud { width: 8rem; color: var(--sun); display: block; margin-bottom: 1rem; }
+  .cmd { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--sky); border-radius: 10px; padding: .75rem 1rem; margin-top: 1rem; }
+
+  @media (max-width: 760px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .rail { position: static; height: auto; padding: 1rem 1rem .75rem; }
+    .mark { margin-bottom: .75rem; }
+    .rail ul { display: flex; gap: .25rem; overflow-x: auto; padding-bottom: .25rem; }
+    .rail li { flex: none; }
+    .rail li a { grid-template-columns: 2rem auto; }
+    .rail .cloud { width: 2rem; }
+    .rail .hint { display: none; }
+    .hero .cloud { width: 5rem; }
+    .people li { grid-template-columns: 2rem 1fr; }
+    .people .acts { grid-column: 2; }
+  }
+</style>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Your apps">
+    <a class="mark" href="/">nephos</a>
+    {{if .Apps}}
+    <ul>
+      {{range .Apps}}
+      <li>
+        <a href="/?app={{.Name}}"{{if eq .Name $.Selected.Name}} aria-current="page"{{end}}>
+          <span class="cloud">{{cloud .Name}}</span>
+          <span class="nm">{{.Name}}</span>
+          <span class="sub">{{access . $.Org}}</span>
+        </a>
+      </li>
+      {{end}}
+    </ul>
+    <p class="hint">Deploy another app:<code>nephos deploy ./folder</code></p>
+    {{end}}
+  </nav>
+
+  <main>
+    {{with .Selected}}
+    <div class="pane">
+      <div class="hero">
+        <span class="cloud">{{cloud .Name}}</span>
+        <h1>{{.Name}}</h1>
+      </div>
+
+      <p class="where">
+        <a class="mono" href="{{.URL}}">{{.URL}}</a>
+        <button class="quiet" type="button" data-copy="{{.URL}}">Copy address</button>
+      </p>
+      <p class="facts">Deployed {{ago .Deployed}}.{{if .HasHandler}} Runs server code.{{end}}{{if .EnvKeys}} Settings: {{range $i, $k := .EnvKeys}}{{if $i}}, {{end}}{{$k}}{{end}}.{{end}}
+        {{if .CanRollback}}<form class="inline" method="post" action="/apps/{{.Name}}/rollback"><button class="quiet">Roll back to the previous version</button></form>{{end}}</p>
+      <a class="go" href="/open/{{.Name}}">Open app</a>
+
+      {{if $.Notice}}<p class="notice" role="status">{{$.Notice}}</p>{{end}}
+
+      <h2>Who can open it</h2>
+      <p class="lede">{{if eq .Access "public"}}Anyone who has the address can open this app. Invited people are still listed below.{{else if eq .Access "org"}}Anyone at {{$.Org}} can open this app after signing in with their work email. Invited people are still listed below.{{else}}Only you and the people below. Each signs in with their email.{{end}}</p>
+
+      <form class="mode" method="post" action="/apps/{{.Name}}/access" aria-label="Access">
+        <button name="access" value="invited" aria-pressed="{{if eq .Access "invited"}}true{{else}}false{{end}}">Only people I invite</button>
+        {{if $.Org}}<button name="access" value="org" aria-pressed="{{if eq .Access "org"}}true{{else}}false{{end}}">Anyone at {{$.Org}}</button>{{end}}
+        <button name="access" value="public" aria-pressed="{{if eq .Access "public"}}true{{else}}false{{end}}">Anyone with the address</button>
+      </form>
+
+      {{if .People}}
+      <ul class="people">
+        {{range .People}}
+        <li>
+          <span class="who" aria-hidden="true">{{slice .Email 0 1}}</span>
+          <span class="email">{{.Email}}<small>{{if .LastSeen.IsZero}}Invited {{ago .Added}}{{else}}Opened {{ago .LastSeen}}{{end}}</small></span>
+          <span class="acts">
+            <button class="quiet" type="button" data-link-app="{{$.Selected.Name}}" data-link-email="{{.Email}}">Copy sign-in link</button>
+            {{if $.EmailOn}}
+            <form method="post" action="/apps/{{$.Selected.Name}}/share">
+              <input type="hidden" name="email" value="{{.Email}}">
+              <button class="quiet">Send again</button>
+            </form>
+            {{end}}
+            <form method="post" action="/apps/{{$.Selected.Name}}/revoke">
+              <input type="hidden" name="email" value="{{.Email}}">
+              <button class="quiet danger">Remove</button>
+            </form>
+          </span>
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p class="none">Nobody yet. Add an email to get a link you can send them.</p>
+      {{end}}
+
+      <form class="invite" method="post" action="/apps/{{.Name}}/share">
+        <input type="email" name="email" placeholder="name@example.com" aria-label="Email to invite" required>
+        <button class="go">Invite</button>
+      </form>
+
+      <details>
+        <summary>Delete this app</summary>
+        <form method="post" action="/apps/{{.Name}}/delete">
+          <p>This removes its files and everything it saved. It can't be undone.</p>
+          <button class="quiet danger">Delete {{.Name}}</button>
+        </form>
+      </details>
+    </div>
+    {{else}}
+    <div class="empty">
+      <span class="cloud">{{cloud "nephos"}}</span>
+      <h1>Nothing here yet</h1>
+      <p class="lede">Deploy a folder that has an index.html and it shows up here, ready to share.</p>
+      <div class="cmd"><code>nephos deploy ./my-app</code><button class="quiet" type="button" data-copy="nephos deploy ./my-app">Copy</button></div>
+    </div>
+    {{end}}
+  </main>
+</div>
+<script>
+  function flash(b, text) {
+    const was = b.textContent;
+    b.textContent = text;
+    setTimeout(() => { b.textContent = was; }, 1800);
+  }
+  document.addEventListener('click', async e => {
+    const copy = e.target.closest('[data-copy]');
+    if (copy) {
+      navigator.clipboard.writeText(copy.dataset.copy).then(() => flash(copy, 'Copied'));
+      return;
+    }
+    const link = e.target.closest('[data-link-email]');
+    if (!link) return;
+    try {
+      const res = await fetch('/apps/' + encodeURIComponent(link.dataset.linkApp) + '/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ email: link.dataset.linkEmail }),
+      });
+      if (!res.ok) throw new Error(res.statusText);
+      await navigator.clipboard.writeText((await res.json()).link);
+      flash(link, 'Copied. Works once, 7 days');
+    } catch (err) {
+      flash(link, 'Could not copy');
+    }
+  });
+</script>

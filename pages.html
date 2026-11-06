@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>{{.App}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Young+Serif&display=swap">
+<style>
+  {{.Tokens}}
+
+  main { min-height: 100vh; display: grid; align-content: center; justify-items: start; padding: 2rem clamp(1rem, 8vw, 6rem); max-width: 36rem; margin: 0 auto; }
+  .cloud { width: 6rem; color: var(--sun); display: block; margin-bottom: 1.25rem; animation: drift 11s ease-in-out infinite alternate; }
+  @keyframes drift { from { transform: translateX(-.4rem); } to { transform: translateX(.6rem); } }
+  @media (prefers-reduced-motion: reduce) { .cloud { animation: none; } }
+  h1 { font: clamp(1.75rem, 5vw, 2.4rem)/1.15 var(--serif); margin: 0 0 .75rem; overflow-wrap: anywhere; }
+  p { margin: 0 0 1.25rem; max-width: 30rem; }
+  .muted { color: var(--muted); }
+  .notice { color: var(--danger); font-weight: 500; }
+  form { display: flex; gap: .5rem; flex-wrap: wrap; width: 100%; }
+  label { flex-basis: 100%; font-weight: 600; }
+  input[type=email] { flex: 1 1 14rem; font: inherit; color: var(--ink); background: var(--sky); border: 1px solid transparent; border-radius: 8px; padding: .55rem .75rem; }
+  .brand { margin-top: 2.5rem; font: 1rem var(--serif); color: var(--muted); }
+</style>
+<main>
+  <span class="cloud">{{.Cloud}}</span>
+
+  {{if eq .Mode "confirm"}}
+    <h1>Open {{.App}}</h1>
+    <p>Continue as <strong>{{.Email}}</strong>. You'll stay signed in on this device for 30 days.</p>
+    <form method="post" action="/_nephos/join">
+      <input type="hidden" name="t" value="{{.Token}}">
+      <button class="go">Continue</button>
+    </form>
+
+  {{else if eq .Mode "sent"}}
+    <h1>Check your email</h1>
+    <p>If <strong>{{.Email}}</strong> has access to {{.App}}, a link is on its way. It works once and expires in 15 minutes.</p>
+    <p class="muted">Nothing arrived? Check spam, or <a href="/">try another address</a>.</p>
+
+  {{else}}
+    <h1>{{.App}} is private</h1>
+    {{if .Notice}}<p class="notice" role="alert">{{.Notice}}</p>{{end}}
+    <p class="muted">Enter the email address you were invited with and we'll send you a link to open it.</p>
+    <form method="post" action="/_nephos/login">
+      <label for="email">Email</label>
+      <input id="email" type="email" name="email" autocomplete="email" required autofocus>
+      <button class="go">Email me a link</button>
+    </form>
+  {{end}}
+
+  <p class="brand">nephos</p>
+</main>

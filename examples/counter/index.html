@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>counter</title>
+<h1 id="n">...</h1>
+<button id="b">visit</button> <small id="l"></small>
+<script>
+  const show = d => { n.textContent = d.visits + ' visits'; l.textContent = d.last ? 'last: ' + d.last : ''; };
+  fetch('/api/').then(r => r.json()).then(show);
+  b.onclick = () => fetch('/api/', { method: 'POST' }).then(r => r.json()).then(show);
+</script>

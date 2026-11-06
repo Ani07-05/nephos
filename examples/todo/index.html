@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>team todo</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 30rem; margin: 3rem auto; padding: 0 1rem; }
+  li { display: flex; gap: .5rem; padding: .3rem 0; }
+  .done span { text-decoration: line-through; opacity: .5; }
+  ul { list-style: none; padding: 0; }
+  small { color: #888; }
+</style>
+<h1>team todo</h1>
+<small id="who"></small>
+<form id="f"><input id="t" placeholder="add a task" autofocus> <button>add</button></form>
+<ul id="list"></ul>
+<script>
+  const api = (p, o) => fetch('/_nephos/' + p, o);
+  let todos = [];
+  const save = () => api('kv/todos', { method: 'PUT', body: JSON.stringify(todos) }).then(render);
+  function render() {
+    list.innerHTML = '';
+    todos.forEach((t, i) => {
+      const li = document.createElement('li');
+      li.className = t.done ? 'done' : '';
+      const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: t.done });
+      cb.onchange = () => { todos[i].done = cb.checked; save(); };
+      const s = document.createElement('span'); s.textContent = t.text;
+      li.append(cb, s); list.append(li);
+    });
+  }
+  async function load() {
+    const r = await api('kv/todos');
+    todos = r.ok ? await r.json() : [];
+    render();
+  }
+  f.onsubmit = e => { e.preventDefault(); if (!t.value) return; todos.push({ text: t.value, done: false }); t.value = ''; save(); };
+  api('me').then(r => r.json()).then(m => who.textContent = 'signed in as ' + (m.email || 'anonymous'));
+  load(); setInterval(load, 3000);
+</script>
