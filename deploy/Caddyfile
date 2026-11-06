@@ -1,0 +1,17 @@
+{
+	email {$ACME_EMAIL}
+
+	# Certificates are issued per hostname the first time it is visited, but only
+	# when nephos confirms the hostname is the dashboard or a deployed app.
+	on_demand_tls {
+		ask http://nephos:8080/_internal/tls-ask
+	}
+}
+
+{$NEPHOS_DOMAIN}, *.{$NEPHOS_DOMAIN} {
+	tls {
+		on_demand
+	}
+	encode zstd gzip
+	reverse_proxy nephos:8080
+}

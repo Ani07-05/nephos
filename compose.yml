@@ -1,0 +1,39 @@
+services:
+  nephos:
+    build: .
+    restart: unless-stopped
+    command:
+      - serve
+      - -addr=:8080
+      - -data=/data
+      - -url=https://${NEPHOS_DOMAIN:?set NEPHOS_DOMAIN in .env}
+      - -domain=${NEPHOS_DOMAIN}
+    environment:
+      NEPHOS_SMTP: ${NEPHOS_SMTP:-}
+      NEPHOS_SMTP_USER: ${NEPHOS_SMTP_USER:-}
+      NEPHOS_SMTP_PASS: ${NEPHOS_SMTP_PASS:-}
+      NEPHOS_MAIL_FROM: ${NEPHOS_MAIL_FROM:-}
+      NEPHOS_ORG_DOMAINS: ${NEPHOS_ORG_DOMAINS:-}
+    volumes:
+      - nephos-data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [nephos]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      NEPHOS_DOMAIN: ${NEPHOS_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  nephos-data:
+  caddy-data:
+  caddy-config:
