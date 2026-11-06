@@ -15,6 +15,16 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
+// banner is the wordmark shown above the lists when the terminal is tall enough.
+const banner = `                       _
+ _ __    ___   _ __   | |__     ___    ___
+| '_ \  / _ \ | '_ \  | '_ \   / _ \  / __|
+| | | ||  __/ | |_) | | | | | | (_) | \__ \
+|_| |_| \___| | .__/  |_| |_|  \___/  |___/
+              |_|`
+
+const bannerMinHeight = 30
+
 const (
 	railWidth   = 28
 	refreshEach = 5 * time.Second
@@ -376,12 +386,15 @@ func (m tuiModel) View() tea.View {
 
 func (m tuiModel) render() string {
 	p := m.pal
-	title := lipgloss.NewStyle().Bold(true).Foreground(p.sun).Render("nephos")
-	where := lipgloss.NewStyle().Foreground(p.muted).Render("  " + m.c.base)
-	header := title + where
+	sun := lipgloss.NewStyle().Bold(true).Foreground(p.sun)
+	where := lipgloss.NewStyle().Foreground(p.muted).Render(m.c.base)
+	header, chrome := " "+sun.Render("nephos")+"  "+where, 7
+	if m.h >= bannerMinHeight {
+		header, chrome = sun.Render(banner)+"\n "+where, 12
+	}
 
 	rightW := max(m.w-railWidth-3, 30)
-	rule := lipgloss.NewStyle().Foreground(p.muted).Render(strings.TrimSuffix(strings.Repeat("│\n", max(m.h-6, 4)), "\n"))
+	rule := lipgloss.NewStyle().Foreground(p.muted).Render(strings.TrimSuffix(strings.Repeat("│\n", max(m.h-chrome, 4)), "\n"))
 	body := lipgloss.JoinHorizontal(lipgloss.Top,
 		lipgloss.NewStyle().Width(railWidth).Render(m.renderRail()),
 		rule,
@@ -396,7 +409,7 @@ func (m tuiModel) render() string {
 		}
 		status = lipgloss.NewStyle().Foreground(c).Render(m.status)
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, "", " "+header, "", body, "", " "+status, " "+m.help())
+	return lipgloss.JoinVertical(lipgloss.Left, "", header, "", body, "", " "+status, " "+m.help())
 }
 
 func (m tuiModel) renderRail() string {
