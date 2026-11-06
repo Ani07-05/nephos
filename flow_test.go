@@ -228,3 +228,13 @@ func TestAgentBuildsAppAndColleagueUsesIt(t *testing.T) {
 		t.Fatalf("list: %+v", apps)
 	}
 }
+
+// Pasted commands often carry a sentence's trailing period or a leading @.
+func TestOrgDomainToleratesStrayPunctuation(t *testing.T) {
+	g := newRig(t, "http://localhost:8080", withOrg("@Acme.com."))
+	g.admin("POST", "/apps/counter/access", url.Values{"access": {"org"}})
+	carol := g.signIn(appHost, "carol@acme.com")
+	if rec := g.do("GET", appHost, "/", nil, withCookie(carol)); rec.Code != http.StatusOK {
+		t.Fatalf("org member refused: %d", rec.Code)
+	}
+}
