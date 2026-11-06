@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask the class</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Young+Serif&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --haze: #eef3f7; --sky: #dfe9f1; --rule: #c9d7e2; --ink: #14222e; --muted: #566b7c;
+    --link: #1f5a8c; --sun: #edb02e; --on-sun: #14222e; --danger: #b3392e; --card: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --haze: #0f1b25; --sky: #14252f; --rule: #263a48; --ink: #e6eef4; --muted: #8fa4b4; --link: #8cc0ea; --danger: #ef8478; --card: #1b2f3d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--haze); color: var(--ink); font: 16px/1.55 "Hanken Grotesk", system-ui, sans-serif; }
+  main { max-width: 40rem; margin: 0 auto; padding: clamp(1.5rem, 6vw, 4rem) 1rem 4rem; }
+  :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 6px; }
+
+  h1 { font: clamp(2rem, 6vw, 2.9rem)/1.1 "Young Serif", Georgia, serif; margin: 0 0 .35rem; }
+  .who { color: var(--muted); margin: 0 0 2rem; }
+
+  form { display: grid; gap: .6rem; margin-bottom: 2.25rem; }
+  textarea { width: 100%; min-height: 5.5rem; resize: vertical; font: inherit; color: var(--ink); background: var(--sky); border: 1px solid transparent; border-radius: 10px; padding: .75rem .9rem; }
+  textarea::placeholder { color: var(--muted); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .count { color: var(--muted); font-size: .875rem; }
+  .count.over { color: var(--danger); }
+  button.post { background: var(--sun); color: var(--on-sun); border: 0; border-radius: 8px; padding: .55rem 1.1rem; font: inherit; font-weight: 600; cursor: pointer; }
+  button.post:disabled { opacity: .5; cursor: default; }
+  .error { color: var(--danger); min-height: 1.4em; margin: 0; font-weight: 500; }
+
+  ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  li { display: grid; grid-template-columns: 3.4rem 1fr; gap: .25rem 1rem; padding: 1rem 0; border-bottom: 1px solid var(--rule); }
+  .vote { display: grid; place-items: center; align-content: center; gap: 0; width: 3.4rem; padding: .35rem 0; background: var(--sky); border: 1px solid transparent; border-radius: 10px; color: var(--ink); font: inherit; cursor: pointer; }
+  .vote[aria-pressed="true"] { background: var(--sun); color: var(--on-sun); }
+  .vote b { font-size: 1.15rem; line-height: 1.2; }
+  .vote span { font-size: .75rem; }
+  .text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .meta { color: var(--muted); font-size: .875rem; margin: .25rem 0 0; }
+  .meta button { background: none; border: 0; color: var(--danger); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 0 0 0 .5rem; }
+  .empty { color: var(--muted); padding: 1.25rem 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin: 0; }
+  footer { margin-top: 2.5rem; color: var(--muted); font-size: .875rem; }
+</style>
+<main>
+  <h1 id="course">Ask the class</h1>
+  <p class="who" id="who">Loading...</p>
+
+  <form id="ask">
+    <label for="text" class="count">Ask something the class should answer. Vote up the ones you also want answered.</label>
+    <textarea id="text" placeholder="What's confusing about the project?" maxlength="400"></textarea>
+    <div class="row">
+      <span class="count" id="count">0 / 280</span>
+      <button class="post" id="post" disabled>Post question</button>
+    </div>
+    <p class="error" id="error" role="alert"></p>
+  </form>
+
+  <ul id="list" aria-live="polite"></ul>
+  <p class="empty" id="empty" hidden>No questions yet. Be the first to ask.</p>
+  <footer>Runs on nephos.</footer>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  const MAX = 280;
+  let busy = false;
+
+  const ago = t => {
+    const s = Math.max(0, (Date.now() - t) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + ' min ago';
+    if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+    return Math.floor(s / 86400) + ' d ago';
+  };
+
+  async function call(path, body) {
+    const res = await fetch('/api' + path, body ? { method: 'POST', body: JSON.stringify(body) } : undefined);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    return data;
+  }
+
+  function render(d) {
+    document.title = d.course + ' questions';
+    $('course').textContent = d.course;
+    $('who').textContent = 'Signed in as ' + d.me + '.';
+    $('empty').hidden = d.questions.length > 0;
+    $('list').replaceChildren(...d.questions.map(q => {
+      const li = document.createElement('li');
+      const vote = document.createElement('button');
+      vote.className = 'vote';
+      vote.setAttribute('aria-pressed', q.voted);
+      vote.setAttribute('aria-label', (q.voted ? 'Remove your vote. ' : 'Vote. ') + q.votes + ' votes');
+      vote.innerHTML = '<b></b><span>votes</span>';
+      vote.firstChild.textContent = q.votes;
+      vote.onclick = () => act('/vote', { id: q.id });
+      const body = document.createElement('div');
+      const text = document.createElement('p');
+      text.className = 'text';
+      text.textContent = q.text;
+      const meta = document.createElement('p');
+      meta.className = 'meta';
+      meta.textContent = q.by + ', ' + ago(q.at);
+      if (q.mine || d.me === 'host') {
+        const rm = document.createElement('button');
+        rm.textContent = 'Remove';
+        rm.onclick = () => act('/remove', { id: q.id });
+        meta.append(rm);
+      }
+      body.append(text, meta);
+      li.append(vote, body);
+      return li;
+    }));
+  }
+
+  async function refresh() {
+    if (busy) return;
+    try { render(await call('/')); } catch (e) { $('who').textContent = e.message; }
+  }
+
+  async function act(path, body) {
+    busy = true;
+    $('error').textContent = '';
+    try { await call(path, body); } catch (e) { $('error').textContent = e.message; }
+    busy = false;
+    refresh();
+  }
+
+  const sync = () => {
+    const n = $('text').value.trim().length;
+    $('count').textContent = n + ' / ' + MAX;
+    $('count').classList.toggle('over', n > MAX);
+    $('post').disabled = n === 0 || n > MAX;
+  };
+  $('text').addEventListener('input', sync);
+  $('ask').addEventListener('submit', async e => {
+    e.preventDefault();
+    const text = $('text').value.trim();
+    $('text').value = '';
+    sync();
+    await act('/ask', { text });
+  });
+
+  refresh();
+  setInterval(refresh, 3000);
+</script>
