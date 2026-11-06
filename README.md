@@ -61,8 +61,18 @@ No domain, no VPS. Your laptop has to stay on and awake.
 ./nephos access class-todo org
 ```
 
-Send people the printed address. With `NEPHOS_SMTP` set they get a real sign-in email; without it,
-copy a sign-in link from the dashboard and send it yourself. Some Wi-Fi networks (campus guest
+Send people the printed address. For real sign-in emails, put your mail login in a file named
+`.env` next to the binary (it is gitignored; `nephos` reads it on start):
+
+```
+NEPHOS_SMTP=smtp.gmail.com:587
+NEPHOS_SMTP_USER=you@gmail.com
+NEPHOS_SMTP_PASS=your-16-letter-app-password
+NEPHOS_MAIL_FROM=you@gmail.com
+```
+
+Check it with `./nephos mailtest you@example.com`. Without these, copy a sign-in link from the
+dashboard and send it yourself. Some Wi-Fi networks (campus guest
 networks especially) block devices from reaching each other. If so, use Tailscale or the steps below.
 
 ## Put it on the internet
