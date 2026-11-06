@@ -562,7 +562,7 @@ func (s *Server) page(w http.ResponseWriter, status int, app string, d pageData)
 	d.Tokens, d.Cloud, d.App = template.CSS(tokensCSS), cloudSVG(app), app
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("Referrer-Policy", "same-origin")
 	w.WriteHeader(status)
 	if err := pagesTmpl.Execute(w, d); err != nil {
 		log.Println("page:", err)
