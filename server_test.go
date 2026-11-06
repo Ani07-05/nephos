@@ -387,3 +387,21 @@ func TestSignInPagesKeepBrowserOriginOnFormPosts(t *testing.T) {
 		t.Fatalf("Origin: null must stay refused, got %d", rec.Code)
 	}
 }
+
+func TestParseDotEnv(t *testing.T) {
+	got := parseDotEnv("# mail\nNEPHOS_SMTP=smtp.gmail.com:587\n\nexport NEPHOS_SMTP_USER = me@gmail.com \nNEPHOS_MAIL_FROM=\"nephos <me@gmail.com>\"\nNEPHOS_SMTP_PASS='abcd efgh'\nnot a setting\n")
+	want := map[string]string{
+		"NEPHOS_SMTP":      "smtp.gmail.com:587",
+		"NEPHOS_SMTP_USER": "me@gmail.com",
+		"NEPHOS_MAIL_FROM": "nephos <me@gmail.com>",
+		"NEPHOS_SMTP_PASS": "abcd efgh",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %v", got)
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("%s = %q, want %q", k, got[k], v)
+		}
+	}
+}

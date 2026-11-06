@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -33,6 +34,9 @@ const usage = `nephos - a cloud for small software
 client env: NEPHOS_URL (default http://localhost:8080), NEPHOS_TOKEN (default ./data/admin_token)`
 
 func main() {
+	if err := loadDotEnv(".env"); err != nil {
+		log.Fatal(err)
+	}
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, usage)
 		os.Exit(2)
@@ -390,4 +394,43 @@ func mailtestCmd(args []string) error {
 	}
 	fmt.Println("sent to", to, "- check the inbox (and spam)")
 	return nil
+}
+
+// loadDotEnv reads KEY=value lines from path into the environment, so settings such as the
+// SMTP login live in one file instead of a dozen exports. Variables already set win, and a
+// missing file is fine.
+func loadDotEnv(path string) error {
+	b, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for key, value := range parseDotEnv(string(b)) {
+		if _, set := os.LookupEnv(key); !set {
+			os.Setenv(key, value)
+		}
+	}
+	return nil
+}
+
+func parseDotEnv(text string) map[string]string {
+	out := map[string]string{}
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "export "))
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		if n := len(value); n >= 2 && (value[0] == '"' || value[0] == '\'') && value[n-1] == value[0] {
+			value = value[1 : n-1]
+		}
+		out[strings.TrimSpace(key)] = value
+	}
+	return out
 }
