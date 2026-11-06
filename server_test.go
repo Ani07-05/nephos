@@ -362,3 +362,28 @@ func readFile(path string) (string, error) {
 	b, err := os.ReadFile(path)
 	return string(b), err
 }
+
+// Browsers send "Origin: null" on form posts when the page's referrer policy is no-referrer,
+// so the sign-in pages must use same-origin. Origin null itself stays refused.
+func TestSignInPagesKeepBrowserOriginOnFormPosts(t *testing.T) {
+	g := newRig(t, "http://localhost:8080")
+	page := g.do("GET", appHost, "/", nil)
+	if got := page.Header().Get("Referrer-Policy"); got != "same-origin" {
+		t.Fatalf("Referrer-Policy %q would make browsers send Origin: null", got)
+	}
+	if !strings.Contains(page.Body.String(), `<meta name="referrer" content="same-origin">`) {
+		t.Fatal("page meta referrer policy must be same-origin")
+	}
+
+	realBrowser := func(r *http.Request) {
+		r.Header.Set("Origin", "http://"+appHost)
+		r.Header.Set("Sec-Fetch-Site", "same-origin")
+	}
+	if rec := g.do("POST", appHost, "/_nephos/login", url.Values{"email": {"bob@example.com"}}, realBrowser); rec.Code != http.StatusOK {
+		t.Fatalf("same-origin form post refused: %d", rec.Code)
+	}
+	null := func(r *http.Request) { r.Header.Set("Origin", "null") }
+	if rec := g.do("POST", appHost, "/_nephos/login", url.Values{"email": {"bob@example.com"}}, null); rec.Code != http.StatusForbidden {
+		t.Fatalf("Origin: null must stay refused, got %d", rec.Code)
+	}
+}
