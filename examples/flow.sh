@@ -4,6 +4,9 @@
 #   opens it to the organization and invites a colleague by email;
 #   colleagues sign in with emailed links and use it; outsiders can't.
 set -euo pipefail
+
+# An empty value beats the .env file, so this run prints emails instead of sending real ones.
+export NEPHOS_SMTP=
 cd "$(dirname "$0")/.."
 
 PORT=${PORT:-8099}
