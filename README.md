@@ -49,6 +49,22 @@ go build -o nephos . && ./nephos serve
 Without SMTP configured, sign-in emails are printed in the server log instead of sent.
 Local app addresses look like `counter.localhost:8080` (Chrome and Firefox resolve them).
 
+## Share without a server
+
+`nephos serve -lan` gives every app an address like `http://class-todo.10-17-7-101.sslip.io:8080`,
+which points at your own machine, so people on the same Wi-Fi (or Tailscale network) can open it.
+No domain, no VPS. Your laptop has to stay on and awake.
+
+```
+./nephos serve -lan -org-domain rvu.edu.in      # on Tailscale: add -ip $(tailscale ip -4)
+./nephos deploy examples/todo class-todo
+./nephos access class-todo org
+```
+
+Send people the printed address. With `NEPHOS_SMTP` set they get a real sign-in email; without it,
+copy a sign-in link from the dashboard and send it yourself. Some Wi-Fi networks (campus guest
+networks especially) block devices from reaching each other. If so, use Tailscale or the steps below.
+
 ## Put it on the internet
 
 You need a server with ports 80 and 443 open, and a domain.
